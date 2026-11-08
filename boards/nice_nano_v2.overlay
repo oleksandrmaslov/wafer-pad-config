@@ -23,6 +23,7 @@
 
 / {
 	aliases {
+		touch0 = &trackpad;
 		motion0 = &imu;
 	};
 };
@@ -36,6 +37,15 @@
 &i2c0 {
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
+
+	/* Azoteq TPS65 (IQS550, IQS5xx-B000 firmware). Default address 0x74
+	 * (IQS5xx-B000 datasheet §8.2). Not the Cirque Pinnacle (0x2A). */
+	trackpad: trackpad@74 {
+		compatible = "azoteq,iqs5xx";
+		reg = <0x74>;
+		rdy-gpios = <&gpio1 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		reset-gpios = <&gpio1 6 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+	};
 
 	/* ST LSM6DSOX on the Zephyr "st,lsm6dso" driver: WHO_AM_I (0x6C) and the
 	 * accel/gyro control/output registers are identical (hal_st
