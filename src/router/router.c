@@ -1298,6 +1298,20 @@ static void prepare_sleep(void)
 	ctl_submit();
 }
 
+/* Why the pad left IDLE. Power diagnostic: on a pad lying untouched on a
+ * table, IDLE must not end by itself. */
+static void log_idle_exit_reason(void)
+{
+	if (rt.contacts > 0U) {
+		LOG_INF("left IDLE: touch (%u contacts)", rt.contacts);
+	} else if (rt.features.valid && rt.features.moving) {
+		LOG_INF("left IDLE: motion (accel dev %d mg, gyro %d dps)",
+			(int)(rt.features.accel_dev_g * 1000.0f), (int)rt.features.gyro_mag_dps);
+	} else {
+		LOG_INF("left IDLE: other (mode, calibration or error)");
+	}
+}
+
 static void apply_sm(const struct wp_sm_outputs *out, int64_t t)
 {
 	const struct wp_sm_outputs *prev = &rt.out;
@@ -1306,6 +1320,9 @@ static void apply_sm(const struct wp_sm_outputs *out, int64_t t)
 	if (first || out->state_changed) {
 		LOG_INF("state %s -> %s (mode %s)", wp_state_name(out->prev_state),
 			wp_state_name(out->state), wp_mode_name(out->mode));
+	}
+	if (!first && out->state_changed && out->prev_state == WP_STATE_IDLE) {
+		log_idle_exit_reason();
 	}
 
 	if (first || out->gyro_needed != prev->gyro_needed ||
