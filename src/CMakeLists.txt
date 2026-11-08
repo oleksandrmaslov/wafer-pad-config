@@ -7,3 +7,4 @@ target_sources(app PRIVATE main.c)
 # Pure algorithm files (no Zephyr includes) are also compiled by tests/.
 add_subdirectory(orientation)
 add_subdirectory(gestures)
+add_subdirectory(air_mouse)

@@ -1,0 +1,68 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Air mouse (gyroscope angular rate -> cursor). Defaults equal
+# wp_air_mouse_config_default() in src/air_mouse/air_mouse.c.
+
+menu "Air mouse"
+
+config WAFER_PAD_AIR_COUNTS_PER_DEG_CENTI
+	int "Air mouse sensitivity [counts per degree x100]"
+	range 1 100000
+	default 1200
+	help
+	  Cursor counts per degree of hand rotation, times 100.
+	  1200 = 12.00 counts/deg.
+
+config WAFER_PAD_AIR_DEADZONE_DECI_DPS
+	int "Soft deadzone [deg/s x10]"
+	range 0 500
+	default 15
+	help
+	  Angular rates at or below this are ignored; above it the deadzone is
+	  subtracted (soft deadzone). 15 = 1.5 deg/s.
+
+config WAFER_PAD_AIR_LPF_CUTOFF_HZ
+	int "Rate low-pass cutoff [Hz]"
+	range 0 200
+	default 15
+	help
+	  Cutoff of the 1-pole low-pass on the projected angular rates.
+	  0 disables the filter.
+
+config WAFER_PAD_AIR_MAX_RATE_DPS
+	int "Maximum angular rate after the deadzone [deg/s]"
+	range 10 2000
+	default 400
+
+config WAFER_PAD_AIR_RAMP_IN_MS
+	int "Gain ramp-in after the clutch engages [ms]"
+	range 0 2000
+	default 120
+	help
+	  The gain rises linearly from 0 to 1 over this time after the air
+	  mouse is started. 0 = full gain immediately.
+
+config WAFER_PAD_AIR_GRAVITY_COMP
+	bool "Gravity-compensated axes"
+	default y
+	help
+	  Yaw is measured about the world vertical (low-passed specific force)
+	  and pitch about the horizontal "right" axis, so a tilted pad still
+	  maps turning left/right to cursor X. When disabled the pad normal and
+	  the pad-plane right axis are used.
+
+config WAFER_PAD_AIR_ACCEL_LP_TAU_MS
+	int "Gravity estimate time constant [ms]"
+	range 10 5000
+	default 150
+
+config WAFER_PAD_AIR_INVERT_X
+	bool "Invert air mouse X"
+	default n
+
+config WAFER_PAD_AIR_INVERT_Y
+	bool "Invert air mouse Y"
+	default n
+
+endmenu
