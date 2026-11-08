@@ -1,0 +1,57 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Azoteq IQS5xx-B000 trackpad controller (IQS550 / IQS572 / IQS525), e.g. the
+  Azoteq TPS65 65 x 49 mm module (IQS550, product number 40).
+
+  OUT-OF-TREE binding of the Wafer Pad project; upstream Zephyr v4.5.0 has no
+  Azoteq IQS5xx binding or driver.
+
+  The driver reports raw controller coordinates. Axis swap / inversion for the
+  mechanical mounting is done in software (Wafer Pad touch source), the
+  controller's factory XY configuration is preserved (read-modify-write).
+
+  Example (TPS65 on a nice!nano v2):
+
+    &i2c0 {
+        trackpad: trackpad@74 {
+            compatible = "azoteq,iqs5xx";
+            reg = <0x74>;
+            rdy-gpios = <&gpio1 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+            reset-gpios = <&gpio1 6 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        };
+    };
+
+compatible: "azoteq,iqs5xx"
+
+include: i2c-device.yaml
+
+properties:
+  rdy-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      RDY output of the controller (active HIGH = communication window open
+      with new data). Used as a level-triggered interrupt.
+
+  reset-gpios:
+    type: phandle-array
+    description: |
+      NRST input of the controller (active LOW). The IC has an internal
+      pull-up and may drive NRST low itself on internal resets, so an
+      open-drain configuration is recommended.
+
+  event-mode:
+    type: boolean
+    description: |
+      Start in event mode (RDY only when a touch event occurs). Without this
+      property the controller streams a window every report cycle, which is
+      more robust (no missed finger-up) at a higher current.
+
+  active-report-rate-ms:
+    type: int
+    default: 0
+    description: |
+      Report period in Active mode in milliseconds. 0 keeps the controller's
+      non-volatile default.
