@@ -1,0 +1,48 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Power management, battery and status LED"
+
+config WAFER_PAD_SLEEP
+	bool "Allow System OFF deep sleep"
+	default y
+	depends on HAS_POWEROFF
+	select POWEROFF
+	imply HWINFO
+	help
+	  Lets wp_power_enter_sleep() arm the wake sources (touch RDY, IMU
+	  INT1 if wired) and enter nRF52 System OFF (wake = reset).
+	  This option only makes sleep POSSIBLE: WHEN to sleep is decided by
+	  the state machine (sleep_enabled, sleep/disconnected timeouts in the
+	  "state" menu, off by default for the exhibition build). The power
+	  module only executes. The P0.13 sensor rail (3V3 header pin) is
+	  never switched off automatically.
+	  If disabled, a sleep request is refused and the router restarts the
+	  state machine instead.
+
+config WAFER_PAD_BATTERY
+	bool "Battery measurement and BLE Battery Service updates"
+	default y
+	depends on ADC
+	help
+	  Measures VDDH/5 with the SAADC channel from the zephyr,user
+	  io-channels property and reports a LiPo state of charge through
+	  wp_ble_set_battery_level(). On USB power WITHOUT a battery, VDDH is
+	  the charger output (about 4.2 V or more), so the value reads ~100 %
+	  and is meaningless.
+
+config WAFER_PAD_BATTERY_INTERVAL_S
+	int "Battery measurement interval [s]"
+	default 60
+	range 5 3600
+	depends on WAFER_PAD_BATTERY
+
+config WAFER_PAD_LED
+	bool "Status LED (devicetree alias led0)"
+	default y
+	depends on GPIO
+	help
+	  Non-blocking blink patterns (advertising, connected, calibration,
+	  air mouse, error, mode / orientation feedback) on led0.
+
+endmenu
