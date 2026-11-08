@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2026 Wafer Pad contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This tool must not write anything outside the storage partition. With
+ * gpio-as-nreset set, Zephyr's SystemInit programs UICR PSELRESET when it is
+ * still blank. The UF2 bootloader has already programmed it (pin reset keeps
+ * working), so dropping the property only removes that UICR write path from
+ * this image.
+ */
+
+&uicr {
+	/delete-property/ gpio-as-nreset;
+};
