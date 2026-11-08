@@ -1,0 +1,6 @@
+board:
+  name: nice_nano_v2
+  full_name: nice!nano v2
+  vendor: nicekeyboards
+  socs:
+    - name: nrf52840
