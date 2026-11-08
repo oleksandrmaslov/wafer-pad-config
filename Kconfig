@@ -6,6 +6,7 @@ mainmenu "Wafer Pad"
 menu "Wafer Pad application"
 
 # Every subsystem owns its options (CONFIG_WAFER_PAD_<SUBSYSTEM>_*).
+rsource "src/touch/Kconfig"
 rsource "src/orientation/Kconfig"
 rsource "src/gestures/Kconfig"
 rsource "src/air_mouse/Kconfig"

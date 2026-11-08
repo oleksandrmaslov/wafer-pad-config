@@ -1,0 +1,41 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Touch"
+
+config WAFER_PAD_TOUCH_SWAP_XY
+	bool "Swap the controller's X and Y axes"
+	default n
+	help
+	  Mounting correction sensor frame -> pad frame, applied first
+	  (before the inversions). Also exchanges the X/Y extents.
+
+config WAFER_PAD_TOUCH_INVERT_X
+	bool "Invert X (after the optional swap)"
+	default n
+	help
+	  x = max_x - x, so that +x points to the pad's right edge.
+
+config WAFER_PAD_TOUCH_INVERT_Y
+	bool "Invert Y (after the optional swap)"
+	default n
+	help
+	  y = max_y - y, so that +y points to the pad's bottom edge.
+
+config WAFER_PAD_TOUCH_WIDTH_CENTI_MM
+	int "Touch surface width along the sensor X axis (0.01 mm)"
+	default 6500
+	range 100 100000
+	help
+	  Physical extent along the controller's X axis, BEFORE the mounting
+	  correction. Azoteq TPS65: 65.00 mm x 49.00 mm.
+
+config WAFER_PAD_TOUCH_HEIGHT_CENTI_MM
+	int "Touch surface height along the sensor Y axis (0.01 mm)"
+	default 4900
+	range 100 100000
+	help
+	  Physical extent along the controller's Y axis, BEFORE the mounting
+	  correction. Azoteq TPS65: 65.00 mm x 49.00 mm.
+
+endmenu
