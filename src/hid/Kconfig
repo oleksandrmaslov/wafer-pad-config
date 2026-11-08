@@ -76,25 +76,37 @@ config WAFER_PAD_BLE_LL_LATENCY
 
 config WAFER_PAD_BLE_PS_INTERVAL_MIN_US
 	int "Power-saving connection interval minimum (us)"
-	default 30000
+	default 15000
 	range 7500 4000000
 	help
 	  Requested while the pad is idle. Multiple of 1250 us.
 
+	  Keep the power-saving interval at the low-latency interval and
+	  save power with WAFER_PAD_BLE_PS_LATENCY instead. Linux rejects
+	  (0x1E, invalid LL parameters) every request whose maximum interval
+	  is above the last accepted one (net/bluetooth/hci_event.c,
+	  hci_le_remote_conn_param_req_evt), so after the 15 ms low-latency
+	  request a longer interval is never granted. Seen on the prototype
+	  with BlueZ 5.72 / Linux 7.0.
+
 config WAFER_PAD_BLE_PS_INTERVAL_MAX_US
 	int "Power-saving connection interval maximum (us)"
-	default 60000
+	default 15000
 	range 7500 4000000
 	help
-	  Multiple of 1250 us, >= the minimum.
+	  Multiple of 1250 us, >= the minimum. See
+	  WAFER_PAD_BLE_PS_INTERVAL_MIN_US.
 
 config WAFER_PAD_BLE_PS_LATENCY
 	int "Power-saving peripheral latency (connection events)"
-	default 4
+	default 20
 	range 0 30
 	help
 	  The peripheral may skip this many connection events when it has
-	  nothing to send. Input reports are still sent at the next event.
+	  nothing to send. Input reports are still sent at the next event,
+	  so wake-up costs no latency. 20 at 15 ms: the radio listens about
+	  every 315 ms while idle (Apple limit: interval max * (latency + 1)
+	  <= 2 s).
 
 config WAFER_PAD_BLE_SUPERVISION_TIMEOUT_MS
 	int "Connection supervision timeout (ms)"
