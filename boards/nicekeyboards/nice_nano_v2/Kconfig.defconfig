@@ -1,0 +1,15 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_NICE_NANO_V2
+
+# USB CDC ACM as console / log / shell backend (same helper as the upstream
+# promicro_nrf52840 board): enables the USB device stack "next" and
+# initializes the CDC ACM UART at boot.
+source "boards/common/usb/Kconfig.cdc_acm_serial.defconfig"
+
+# The 3V3 ("VCC") header pin is a regulator-fixed node gated by P0.13.
+config REGULATOR
+	default y
+
+endif # BOARD_NICE_NANO_V2
