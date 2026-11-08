@@ -9,6 +9,7 @@ menu "Wafer Pad application"
 rsource "src/orientation/Kconfig"
 rsource "src/gestures/Kconfig"
 rsource "src/air_mouse/Kconfig"
+rsource "src/state/Kconfig"
 
 module = WAFER_PAD
 module-str = Wafer Pad

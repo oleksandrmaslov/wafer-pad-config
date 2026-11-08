@@ -1,0 +1,109 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Device state machine. Defaults equal wp_sm_config_default() in
+# src/state/state_machine.c.
+
+menu "Device state machine"
+
+config WAFER_PAD_SM_PICKUP_CONFIRM_MS
+	int "Pickup confirmation time [ms]"
+	range 0 5000
+	default 400
+	help
+	  Minimum time in PICKUP_CANDIDATE before HANDHELD is confirmed
+	  (requires gyro hand tremor or renewed motion in this window). Keep
+	  it above the motion stillness window (300 ms) + 100 ms so that a
+	  knock on the table returns to TRACKPAD instead.
+
+config WAFER_PAD_SM_PICKUP_SETTLE_MS
+	int "Pickup: ignore the triggering transient for [ms]"
+	range 0 2000
+	default 150
+	help
+	  Motion during the first ms of PICKUP_CANDIDATE belongs to the knock
+	  or lift that started it and does not confirm a pickup.
+
+config WAFER_PAD_SM_PICKUP_TIMEOUT_MS
+	int "Pickup decision timeout [ms]"
+	range 100 30000
+	default 1500
+	help
+	  PICKUP_CANDIDATE returns to TRACKPAD if no decision was made.
+
+config WAFER_PAD_SM_PUTDOWN_STILL_MS
+	int "Stillness that cancels a pickup candidate (bump) [ms]"
+	range 0 10000
+	default 300
+
+config WAFER_PAD_SM_HANDHELD_PUTDOWN_MS
+	int "Stillness that returns HANDHELD/AIR_MOUSE to TRACKPAD [ms]"
+	range 0 60000
+	default 1200
+
+config WAFER_PAD_SM_AIR_MOUSE_ENABLED
+	bool "Allow air mouse (single still finger while handheld)"
+	default y
+
+config WAFER_PAD_SM_AIR_HOLD_MS
+	int "Still finger time that engages the air mouse [ms]"
+	range 0 5000
+	default 300
+
+config WAFER_PAD_SM_IDLE_TIMEOUT_MS
+	int "Inactivity before IDLE [ms]"
+	range 0 3600000
+	default 30000
+	help
+	  No touch and no motion in TRACKPAD for this long enters IDLE
+	  (low-power touch, low IMU rate). 0 disables IDLE.
+
+config WAFER_PAD_SM_SLEEP_ENABLED
+	bool "Allow SLEEP (System OFF)"
+	default n
+	help
+	  Disabled for the exhibition build: the device never powers itself
+	  off. When enabled, IDLE enters SLEEP after the sleep timeout or
+	  after being BLE-disconnected for the disconnected sleep time.
+
+config WAFER_PAD_SM_SLEEP_TIMEOUT_MS
+	int "Time in IDLE before SLEEP [ms]"
+	range 0 86400000
+	default 900000
+	help
+	  0 disables the inactivity sleep.
+
+config WAFER_PAD_SM_DISCONNECTED_SLEEP_MS
+	int "BLE-disconnected time before SLEEP (from IDLE) [ms]"
+	range 0 86400000
+	default 0
+	help
+	  0 = never.
+
+config WAFER_PAD_SM_CALIB_TIMEOUT_MS
+	int "Orientation calibration timeout [ms]"
+	range 0 60000
+	default 5000
+	help
+	  0 disables the timeout.
+
+config WAFER_PAD_SM_ERROR_RETRY_MS
+	int "First sensor re-initialization retry interval [ms]"
+	range 10 60000
+	default 500
+
+config WAFER_PAD_SM_ERROR_RETRY_MAX_MS
+	int "Maximum re-initialization retry interval [ms]"
+	range 10 600000
+	default 8000
+	help
+	  The retry interval doubles after every attempt up to this value.
+
+config WAFER_PAD_SM_GYRO_ALWAYS_ON
+	bool "Keep the gyroscope powered in every state"
+	default n
+	help
+	  Normally the gyroscope is powered only in PICKUP_CANDIDATE, HANDHELD
+	  and AIR_MOUSE.
+
+endmenu
