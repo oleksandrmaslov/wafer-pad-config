@@ -1,0 +1,38 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Event router"
+
+config WAFER_PAD_ROUTER_QUEUE_DEPTH
+	int "Router message queue depth"
+	default 24
+	range 4 256
+	help
+	  Number of messages (touch frames, IMU samples, status changes,
+	  requests) the router queue can hold. Producers never block: when the
+	  queue is full the message is dropped and counted (wp status ->
+	  queue_drops). Status/connection/request messages that do not fit are
+	  latched instead, so they are never lost.
+
+config WAFER_PAD_ROUTER_STACK_SIZE
+	int "Router thread stack size"
+	default 4096
+	help
+	  The router thread runs every algorithm (state machine, orientation,
+	  calibration, gestures, air mouse, HID composer) with float math.
+
+config WAFER_PAD_ROUTER_PRIORITY
+	int "Router thread priority (preemptible)"
+	default 4
+	range 0 14
+
+config WAFER_PAD_ROUTER_TICK_MS
+	int "Router housekeeping tick [ms]"
+	default 10
+	range 1 50
+	help
+	  Period of the time-driven housekeeping (gesture timers, calibration
+	  timeouts, orientation deferral, state machine, HID flush) when no
+	  message arrives. The state machine needs >= 50 Hz.
+
+endmenu
