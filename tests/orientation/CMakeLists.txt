@@ -13,8 +13,11 @@ target_sources(app PRIVATE
   src/test_mgr.c
   src/test_gyro.c
   src/test_calib.c
+  src/test_calib_chain.c
   ${WP}/src/orientation/orientation_transform.c
   ${WP}/src/orientation/orientation_gravity.c
   ${WP}/src/orientation/orientation_mgr.c
   ${WP}/src/orientation/orientation_calib.c
+  ${WP}/src/gestures/gesture_engine.c
+  ${WP}/src/gestures/pointer_accel.c
 )
