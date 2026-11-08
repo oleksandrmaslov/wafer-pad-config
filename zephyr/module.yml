@@ -1,0 +1,14 @@
+# This repository is BOTH the Wafer Pad application (top-level CMakeLists.txt)
+# and a Zephyr module that provides:
+#   - the out-of-tree board nice_nano_v2   (boards/nicekeyboards/nice_nano_v2)
+#   - the azoteq,iqs5xx devicetree binding (dts/bindings)
+#   - the Azoteq IQS5xx driver             (drivers/)
+# The module build entry points live in drivers/ so they do not collide with
+# the application's top-level CMakeLists.txt / Kconfig.
+name: wafer-pad
+build:
+  cmake: drivers
+  kconfig: drivers/Kconfig
+  settings:
+    board_root: .
+    dts_root: .
