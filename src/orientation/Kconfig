@@ -1,0 +1,198 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Orientation detection (algorithms A-D) and the manual calibration gesture.
+# Defaults MUST equal the C defaults in src/orientation/orientation_*.c
+# (wp_orient_*_config_default, wp_calib_config_default).
+
+menu "Orientation detection"
+
+config WAFER_PAD_ORIENT_AUTO
+	bool "Automatic orientation from gravity (algorithm A)"
+	default y
+	help
+	  Derive the orientation from the gravity direction while the pad is
+	  tilted (raised edge = away from the user). When the pad lies flat the
+	  last orientation is kept. Can also be toggled at runtime.
+
+config WAFER_PAD_ORIENT_DEFAULT_DEG
+	int "Boot orientation in degrees (0, 90, 180 or 270)"
+	range 0 270
+	default 0
+	help
+	  Clockwise rotation of the pad at boot, see include/wafer_pad/types.h.
+	  Only 0, 90, 180 and 270 are accepted (checked at build time).
+
+config WAFER_PAD_ORIENT_MIN_TILT_DEG
+	int "Minimum tilt for a gravity fix (deg)"
+	range 1 89
+	default 20
+	help
+	  Below this tilt the pad counts as flat: gravity carries no heading
+	  information and the last orientation is kept.
+
+config WAFER_PAD_ORIENT_MAX_TILT_DEG
+	int "Maximum tilt for a gravity fix (deg)"
+	range 2 90
+	default 75
+	help
+	  Above this tilt (near vertical, upside down) samples are rejected.
+
+config WAFER_PAD_ORIENT_MAX_MAG_DEV_MILLI_G
+	int "Maximum acceleration magnitude deviation (milli-g)"
+	range 10 1000
+	default 120
+	help
+	  Samples with | |a|/g - 1 | above this are rejected (pad being lifted,
+	  shaken or carried).
+
+config WAFER_PAD_ORIENT_HYSTERESIS_DEG
+	int "Heading hysteresis (deg)"
+	range 0 44
+	default 15
+	help
+	  A new orientation becomes a candidate only when the heading is within
+	  (45 - hysteresis) degrees of its quadrant centre.
+
+config WAFER_PAD_ORIENT_MAX_GYRO_DPS
+	int "Reject gravity samples above this rotation rate (deg/s)"
+	range 1 2000
+	default 20
+
+config WAFER_PAD_ORIENT_CONFIRM_MS
+	int "Candidate confirmation time (ms)"
+	range 0 10000
+	default 300
+
+config WAFER_PAD_ORIENT_CONFIRM_NO_GYRO_MS
+	int "Candidate confirmation time while the gyro is off (ms)"
+	range 0 10000
+	default 800
+	help
+	  Without gyro data the rotation rate cannot be checked, so a slow
+	  pick-up or put-down sweep must be rejected by time and tilt
+	  stability alone.
+
+config WAFER_PAD_ORIENT_MAX_TILT_CHANGE_DEG
+	int "Maximum tilt change during the confirmation (deg)"
+	range 0 45
+	default 6
+	help
+	  The candidate timer restarts when the tilt moves more than this
+	  from its value at the start: a steadily changing tilt is a
+	  pick-up / put-down transient, not a posture. 0 disables the check.
+
+config WAFER_PAD_ORIENT_MIN_CONFIDENCE_CENTI
+	int "Minimum confidence to confirm (x0.01)"
+	range 0 100
+	default 60
+
+config WAFER_PAD_ORIENT_LPF_TAU_MS
+	int "Gravity low-pass time constant (ms)"
+	range 0 2000
+	default 50
+
+config WAFER_PAD_ORIENT_MANUAL_LOCK_MODE
+	int "Manual lock mode (0 none, 1 timed, 2 until recalibration)"
+	range 0 2
+	default 1
+	help
+	  What a manual calibration (or forced orientation) does to automatic
+	  detection: 0 = auto may override immediately, 1 = auto disabled for
+	  WAFER_PAD_ORIENT_MANUAL_LOCK_MS, 2 = auto disabled until the next
+	  calibration or until auto is re-enabled at runtime.
+
+config WAFER_PAD_ORIENT_MANUAL_LOCK_MS
+	int "Manual lock duration (ms)"
+	range 0 3600000
+	default 30000
+
+config WAFER_PAD_ORIENT_TOUCH_SETTLE_MS
+	int "Settle time after the last finger lifts (ms)"
+	range 0 5000
+	default 150
+	help
+	  An automatic orientation change found while touching is applied only
+	  after all fingers have been up for this long.
+
+config WAFER_PAD_ORIENT_GYRO_ASSIST
+	bool "Gyro-assisted rotation tracking (algorithm D, experimental)"
+	help
+	  After a confident fix, track 90 degree rotations about the pad normal
+	  with the gyroscope while the pad is flat or moderately tilted.
+
+if WAFER_PAD_ORIENT_GYRO_ASSIST
+
+config WAFER_PAD_ORIENT_GYRO_STEP_DEG
+	int "Accumulated yaw for one 90 degree step (deg)"
+	range 30 89
+	default 70
+
+config WAFER_PAD_ORIENT_GYRO_MIN_RATE_DPS
+	int "Ignore yaw rates below (deg/s)"
+	range 0 500
+	default 8
+
+config WAFER_PAD_ORIENT_GYRO_MAX_WINDOW_MS
+	int "Yaw accumulation window (ms)"
+	range 100 10000
+	default 1500
+
+config WAFER_PAD_ORIENT_GYRO_MAX_TILT_DEG
+	int "Only integrate below this tilt (deg)"
+	range 1 89
+	default 50
+
+endif # WAFER_PAD_ORIENT_GYRO_ASSIST
+
+comment "Manual calibration gesture (hold, then swipe away from you)"
+
+config WAFER_PAD_CALIB_FINGERS
+	int "Fingers for the calibration gesture"
+	range 1 5
+	default 3
+	help
+	  3 by default: a two-finger hold followed by a flick is a normal
+	  scroll and must never change the orientation.
+
+config WAFER_PAD_CALIB_HOLD_MS
+	int "Hold time before the gesture arms (ms)"
+	range 100 5000
+	default 1500
+
+config WAFER_PAD_CALIB_HOLD_MAX_MOVE_CENTI_MM
+	int "Maximum finger movement while holding (x0.01 mm)"
+	range 10 1000
+	default 150
+
+config WAFER_PAD_CALIB_ARM_TIMEOUT_MS
+	int "Time allowed between arming and the swipe (ms)"
+	range 100 10000
+	default 2500
+
+config WAFER_PAD_CALIB_SWIPE_START_CENTI_MM
+	int "Centroid movement that starts the swipe timer (x0.01 mm)"
+	range 10 2000
+	default 200
+
+config WAFER_PAD_CALIB_SWIPE_MIN_MM
+	int "Minimum swipe distance (mm)"
+	range 3 60
+	default 25
+
+config WAFER_PAD_CALIB_SWIPE_MAX_MS
+	int "Maximum swipe duration (ms)"
+	range 50 2000
+	default 450
+
+config WAFER_PAD_CALIB_SWIPE_MAX_ANGLE_DEV_DEG
+	int "Maximum swipe deviation from a pad axis (deg)"
+	range 5 44
+	default 30
+
+config WAFER_PAD_CALIB_LIFT_MAX_MS
+	int "Fingers must lift within this time after the swipe (ms)"
+	range 50 2000
+	default 250
+
+endmenu
