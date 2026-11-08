@@ -35,4 +35,15 @@ config WAFER_PAD_ROUTER_TICK_MS
 	  timeouts, orientation deferral, state machine, HID flush) when no
 	  message arrives. The state machine needs >= 50 Hz.
 
+config WAFER_PAD_SHELL_BOOTLOADER_CMD
+	bool "'wp bootloader' shell command (Adafruit UF2 bootloader)"
+	default y if BOARD_NICE_NANO_V2
+	depends on SHELL && SOC_SERIES_NRF52 && REBOOT
+	help
+	  Adds 'wp bootloader': writes GPREGRET = 0x57 (DFU_MAGIC_UF2_RESET of
+	  the Adafruit nRF52 bootloader) and resets, so the NICENANO drive
+	  appears without a double-tap on RST. Nothing is erased; the
+	  bootloader starts the installed application again after its
+	  timeout. Only meaningful with that bootloader.
+
 endmenu

@@ -87,7 +87,7 @@ Flash layout (see the DTS comment in `boards/nicekeyboards/nice_nano_v2/nice_nan
 | 0xEC000-0xF4000 | Storage: settings, BLE bonds, gyro bias (32 KB) |
 | 0xF4000-0x100000 | Adafruit bootloader and its settings. Never overwritten. |
 
-**Back to the bootloader:** double-tap RST again. The firmware has no command that reboots into the bootloader. If the application hangs or the console is gone, double-tap RST still works. SWD runners (`jlink`, `pyocd`) are configured in `board.cmake` for restoring the bootloader itself; this was not tried.
+**Back to the bootloader:** run `wp bootloader` on the console, or double-tap RST. The bootloader leaves UF2 mode after about 6 minutes and starts the installed application again, so copy the new UF2 promptly. If the application hangs or the console is gone, double-tap RST still works. SWD runners (`jlink`, `pyocd`) are configured in `board.cmake` for restoring the bootloader itself; this was not tried.
 
 ### d) Console and shell
 
@@ -109,6 +109,7 @@ The baud rate is irrelevant for CDC ACM. Commands in [src/router/router_shell.c]
 | `wp bias` | Print the gyro bias estimate (milli-dps, body frame) |
 | `wp touch` | Touch/IMU frame counters, rates since the last call, `max latency` |
 | `wp imu` | Latest body-frame IMU sample, tilt and gravity heading |
+| `wp bootloader` | Reboot into the UF2 bootloader (`NICENANO` drive), no double-tap needed (nice!nano only) |
 | `i2c scan i2c@40003000` | I2C bus scan (`CONFIG_I2C_SHELL=y`). Expect 0x74 and 0x6a/0x6b. |
 
 ### e) Tests

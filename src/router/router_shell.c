@@ -289,6 +289,32 @@ static int cmd_pair(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
+#if defined(CONFIG_WAFER_PAD_SHELL_BOOTLOADER_CMD)
+#include <soc.h>
+#include <zephyr/sys/reboot.h>
+
+/* Adafruit_nRF52_Bootloader src/main.c: DFU_MAGIC_UF2_RESET. Zephyr's
+ * sys_reboot() ignores its type argument on nRF, so GPREGRET is set here. */
+#define WP_UF2_DFU_MAGIC 0x57U
+#endif
+
+static int cmd_bootloader(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+#if defined(CONFIG_WAFER_PAD_SHELL_BOOTLOADER_CMD)
+	shell_print(sh, "rebooting into the UF2 bootloader (NICENANO drive)");
+	k_msleep(100); /* let the line reach the USB console */
+	NRF_POWER->GPREGRET = WP_UF2_DFU_MAGIC;
+	sys_reboot(SYS_REBOOT_COLD);
+	return 0;
+#else
+	shell_error(sh, "not supported on this board");
+	return -ENOTSUP;
+#endif
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_wp,
 	SHELL_CMD(status, NULL, "Device state, orientation, counters, battery", cmd_status),
 	SHELL_CMD_ARG(orient, NULL, "Force orientation: <0|90|180|270|auto>", cmd_orient, 2, 0),
@@ -300,6 +326,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_wp,
 			     "(verify the IMU mounting: tilt each edge up)", cmd_imu),
 	SHELL_CMD_ARG(pair, NULL, "Open the BLE pairing window: [seconds, default 120]",
 		      cmd_pair, 1, 1),
+	SHELL_COND_CMD(CONFIG_WAFER_PAD_SHELL_BOOTLOADER_CMD, bootloader, NULL,
+		       "Reboot into the UF2 bootloader (no double-tap needed)", cmd_bootloader),
 	SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(wp, &sub_wp, "Wafer Pad commands", NULL);
