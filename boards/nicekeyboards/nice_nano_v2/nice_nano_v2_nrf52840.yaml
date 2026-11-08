@@ -1,0 +1,15 @@
+identifier: nice_nano_v2/nrf52840
+name: nice!nano v2
+vendor: nicekeyboards
+type: mcu
+arch: arm
+ram: 256
+flash: 784
+toolchain:
+  - zephyr
+supported:
+  - gpio
+  - i2c
+  - adc
+  - usbd
+  - ble
