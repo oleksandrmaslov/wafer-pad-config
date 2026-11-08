@@ -76,6 +76,8 @@ To change a Kconfig symbol for one build, append `-- -DCONFIG_NAME=value`. To ch
 
 Alternative: `west flash -r uf2` (runner configured in `boards/nicekeyboards/nice_nano_v2/board.cmake`).
 
+**Board used with another firmware before (ZMK, other Zephyr apps)?** Flash [tools/storage_erase](tools/storage_erase/README.md) first. UF2 flashing does not clear the settings partition, and Wafer Pad would otherwise load the old firmware's Bluetooth bonds. The tool erases only that partition, leaves the SoftDevice and bootloader untouched and reboots into the bootloader by itself.
+
 Flash layout (see the DTS comment in `boards/nicekeyboards/nice_nano_v2/nice_nano_v2_nrf52840.dts`):
 
 | Range | Content |
@@ -147,6 +149,7 @@ wafer-pad/
     hid/                            report composer, BLE HOG, transport
     power/                          power, battery, LED
   tests/                            Twister suites for native_sim
+  tools/storage_erase/              one-shot firmware that wipes the settings partition
   docs/                             wiring, architecture, calibration, testing
 ```
 
