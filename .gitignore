@@ -1,0 +1,13 @@
+# Zephyr / west build output
+build/
+build-*/
+twister-out*/
+
+# Editor and tool state
+.vscode/
+.idea/
+.cache/
+compile_commands.json
+*.swp
+*~
+__pycache__/
