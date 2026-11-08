@@ -1,0 +1,73 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+config AZOTEQ_IQS5XX
+	bool "Azoteq IQS5xx-B000 trackpad controller (TPS65)"
+	default y
+	depends on DT_HAS_AZOTEQ_IQS5XX_ENABLED
+	select I2C
+	select GPIO
+	help
+	  Out-of-tree driver for the Azoteq IQS550/IQS572/IQS525 running the
+	  B000 trackpad firmware (e.g. the TPS65 module). Delivers complete
+	  multi-touch frames through a callback (drivers/azoteq_iqs5xx.h).
+
+if AZOTEQ_IQS5XX
+
+config AZOTEQ_IQS5XX_INIT_PRIORITY
+	int "Azoteq IQS5xx init priority"
+	default 80
+	help
+	  POST_KERNEL init priority. Must be higher (later) than the I2C
+	  controller (I2C_INIT_PRIORITY, 50) and the fixed regulator that
+	  powers the sensor rail through P0.13 (REGULATOR_FIXED_INIT_PRIORITY,
+	  75), and LOWER (earlier) than the other devices on the shared bus
+	  (SENSOR_INIT_PRIORITY, 90): device init holds the controller in
+	  reset and clocks the bus free once, so a slave left holding SDA by a
+	  warm reset cannot make the IMU probe fail. Device init only
+	  configures the GPIOs and queues the controller bring-up on the
+	  driver work queue, so it never blocks boot for long.
+
+config AZOTEQ_IQS5XX_WORKQ_STACK_SIZE
+	int "Azoteq IQS5xx work queue stack size"
+	default 1536
+	help
+	  Stack of the driver's dedicated work queue. Frame reads, bring-up,
+	  recovery and the user callback run on this thread.
+
+config AZOTEQ_IQS5XX_WORKQ_PRIORITY
+	int "Azoteq IQS5xx work queue thread priority"
+	default 2
+	help
+	  Preemptible priority of the driver work queue thread. Keep it higher
+	  (numerically lower) than the consumers of the touch frames.
+	  Priority alone cannot guarantee that RDY is re-armed before
+	  sys_poweroff() (the handler blocks on I2C mid-service): the caller
+	  must call iqs5xx_arm_wake_pin() with interrupts locked right before
+	  sys_poweroff().
+
+config AZOTEQ_IQS5XX_RDY_TIMEOUT_MS
+	int "Streaming mode RDY timeout (ms)"
+	default 2000
+	range 100 60000
+	help
+	  In streaming mode the controller opens a window every report cycle.
+	  If no RDY arrives for this long while initialized, the driver treats
+	  it as a communication error and runs the recovery sequence.
+
+config AZOTEQ_IQS5XX_STALE_MS
+	int "Event mode stale-contact timeout (ms)"
+	default 300
+	range 20 60000
+	help
+	  In event mode, if the last frame had fingers down and no RDY arrived
+	  for this long, the driver performs one forced read (outside a RDY
+	  window) so that a lost finger-up event cannot leave a stuck contact.
+	  Forced reads clock-stretch the shared I2C bus for up to one report
+	  period; they are counted in iqs5xx_stats.forced_reads.
+
+module = AZOTEQ_IQS5XX
+module-str = azoteq_iqs5xx
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # AZOTEQ_IQS5XX
