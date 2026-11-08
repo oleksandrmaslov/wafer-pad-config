@@ -1,0 +1,16 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Wafer Pad"
+
+menu "Wafer Pad application"
+
+# Every subsystem owns its options (CONFIG_WAFER_PAD_<SUBSYSTEM>_*).
+
+module = WAFER_PAD
+module-str = Wafer Pad
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu
+
+source "Kconfig.zephyr"
