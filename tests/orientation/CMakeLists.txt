@@ -10,6 +10,11 @@ target_include_directories(app PRIVATE ${WP}/include)
 target_sources(app PRIVATE
   src/test_transform.c
   src/test_gravity.c
+  src/test_mgr.c
+  src/test_gyro.c
+  src/test_calib.c
   ${WP}/src/orientation/orientation_transform.c
   ${WP}/src/orientation/orientation_gravity.c
+  ${WP}/src/orientation/orientation_mgr.c
+  ${WP}/src/orientation/orientation_calib.c
 )
