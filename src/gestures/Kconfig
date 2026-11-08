@@ -1,0 +1,176 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Trackpad gesture engine and pointer acceleration.
+# Defaults are identical to wp_gesture_config_default() and
+# wp_pointer_accel_config_default() (src/gestures/*.c).
+# Fractional values: _MILLI = x1000, _CENTI = x100.
+
+menu "Gestures and pointer"
+
+config WAFER_PAD_GEST_TAP
+	bool "Tap to click"
+	default y
+	help
+	  One-finger tap = left click, two-finger tap = right click.
+
+config WAFER_PAD_GEST_TAP_MAX_MS
+	int "Maximum tap duration (ms)"
+	default 180
+	range 50 1000
+
+config WAFER_PAD_GEST_TAP_MAX_MOVE_CENTI_MM
+	int "Maximum finger travel of a tap (0.01 mm)"
+	default 150
+	range 0 1000
+	help
+	  Also the travel after which a one-finger touch becomes pointer
+	  motion (or a tap-drag). 150 = 1.5 mm.
+
+config WAFER_PAD_GEST_TAP_DRAG
+	bool "Tap-drag"
+	default y
+	help
+	  Tap, then touch again within the double-tap window and move:
+	  the left button is held while the finger moves.
+
+config WAFER_PAD_GEST_DOUBLE_TAP_WINDOW_MS
+	int "Tap-drag window after a tap (ms)"
+	default 250
+	range 50 2000
+
+config WAFER_PAD_GEST_LONG_PRESS_DRAG
+	bool "Long-press drag"
+	default y
+	help
+	  A finger held still for the long-press time presses the left
+	  button; moving it drags, lifting it releases.
+
+config WAFER_PAD_GEST_LONG_PRESS_MS
+	int "Long-press time (ms)"
+	default 450
+	range 100 5000
+
+config WAFER_PAD_GEST_LONG_PRESS_MAX_MOVE_CENTI_MM
+	int "Maximum travel of a still finger (0.01 mm)"
+	default 100
+	range 0 1000
+	help
+	  Radius used by long press and by the "single finger still"
+	  output (air-mouse clutch). 100 = 1.0 mm.
+
+config WAFER_PAD_GEST_MULTI_DOWN_SKEW_MS
+	int "Simultaneous finger landing window (ms)"
+	default 120
+	range 0 1000
+	help
+	  Fingers landing within this time of the first one form a
+	  multi-finger gesture (tap / scroll). Later fingers are ignored
+	  by a one-finger session.
+
+config WAFER_PAD_GEST_TWO_FINGER_TAP_MAX_MS
+	int "Maximum two/three-finger tap duration (ms)"
+	default 220
+	range 50 2000
+
+config WAFER_PAD_GEST_TWO_FINGER_TAP_MAX_MOVE_CENTI_MM
+	int "Maximum finger travel of a two/three-finger tap (0.01 mm)"
+	default 200
+	range 0 2000
+
+config WAFER_PAD_GEST_THREE_FINGER_TAP
+	bool "Three-finger tap event"
+	default y
+
+config WAFER_PAD_GEST_SCROLL_DETENTS_PER_MM_MILLI
+	int "Scroll wheel detents per mm of two-finger motion (x0.001)"
+	default 250
+	range 1 10000
+	help
+	  250 = 0.25 detent per mm (one detent every 4 mm).
+
+config WAFER_PAD_GEST_SCROLL_START_CENTI_MM
+	int "Two-finger travel before scrolling starts (0.01 mm)"
+	default 100
+	range 0 2000
+
+config WAFER_PAD_GEST_SCROLL_AXIS_LOCK
+	bool "Lock scrolling to the dominant axis"
+	default y
+
+config WAFER_PAD_GEST_SCROLL_AXIS_LOCK_RATIO_CENTI
+	int "Axis lock dominance ratio (x0.01)"
+	default 200
+	range 100 1000
+
+config WAFER_PAD_GEST_SCROLL_NATURAL
+	bool "Natural scrolling (content follows the fingers)"
+	default y
+
+config WAFER_PAD_GEST_SCROLL_INVERT_PAN
+	bool "Invert horizontal pan"
+	default n
+
+config WAFER_PAD_GEST_JITTER_DEADBAND_CENTI_MM
+	int "Pointer jitter deadband after touch-down (0.01 mm)"
+	default 30
+	range 0 500
+
+config WAFER_PAD_GEST_SMOOTHING_ALPHA_CENTI
+	int "Pointer smoothing alpha at low speed (x0.01, 100 = off)"
+	default 60
+	range 5 100
+
+config WAFER_PAD_GEST_SMOOTHING_FULL_SPEED_MM_S
+	int "Speed above which smoothing is off (mm/s)"
+	default 60
+	range 0 1000
+
+config WAFER_PAD_GEST_JUMP_MAX_STEP_MM
+	int "Implausible per-frame step of one contact (mm, 0 = off)"
+	default 15
+	range 0 200
+	help
+	  A contact (same id) that moves farther than this between two
+	  frames is treated as a slot reuse / ghost coordinate: the delta
+	  is dropped (no pointer jump, no scroll burst) and tracking
+	  continues from the new position. 15 mm = 1.5 m/s at the 10 ms
+	  report period, above a hard flick; ghost jumps are 20-40 mm.
+
+config WAFER_PAD_GEST_JUMP_MAX_SPEED_MM_S
+	int "Implausible finger speed between two frames (mm/s, 0 = off)"
+	default 2000
+	range 0 20000
+	help
+	  Same as WAFER_PAD_GEST_JUMP_MAX_STEP_MM, measured as speed from
+	  the frame timestamps (catches jumps at faster report rates). A
+	  hard flick peaks at about 1-1.5 m/s.
+
+config WAFER_PAD_POINTER_COUNTS_PER_MM_CENTI
+	int "Pointer base resolution (HID counts per mm, x0.01)"
+	default 1600
+	range 100 20000
+	help
+	  1600 = 16 counts/mm (about 400 CPI).
+
+config WAFER_PAD_POINTER_SENSITIVITY_CENTI
+	int "Pointer sensitivity multiplier (x0.01)"
+	default 100
+	range 10 1000
+
+config WAFER_PAD_POINTER_ACCEL_LOW_SPEED
+	int "Acceleration starts above this speed (mm/s)"
+	default 20
+	range 0 2000
+
+config WAFER_PAD_POINTER_ACCEL_HIGH_SPEED
+	int "Full acceleration at and above this speed (mm/s)"
+	default 200
+	range 1 5000
+
+config WAFER_PAD_POINTER_ACCEL_MAX_MULT_CENTI
+	int "Maximum acceleration multiplier (x0.01, 100 = off)"
+	default 300
+	range 100 1000
+
+endmenu
