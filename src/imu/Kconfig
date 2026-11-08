@@ -1,0 +1,226 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "IMU (LSM6DSOX accelerometer / gyroscope)"
+
+config WAFER_PAD_IMU
+	bool "IMU source (DT alias motion0, Zephyr sensor API)"
+	default y
+	depends on SENSOR
+	help
+	  Sample the IMU bound to the devicetree alias motion0 (st,lsm6dso
+	  driver for the LSM6DSOX) in a dedicated thread, rotate the samples
+	  into the body frame, remove the gyroscope bias and post them to the
+	  event router. If disabled, or if the alias/device is missing, the
+	  wp_imu_source_* API degrades to stubs (-ENODEV / not present).
+
+if WAFER_PAD_IMU
+
+config WAFER_PAD_IMU_ODR_HZ
+	int "Active sampling rate (Hz)"
+	range 12 208
+	default 104
+	help
+	  Accelerometer/gyroscope output data rate and polling rate while
+	  active. The st,lsm6dso driver rounds up to the next supported ODR
+	  (12.5, 26, 52, 104, 208 Hz).
+
+config WAFER_PAD_IMU_LOW_RATE_HZ
+	int "Low-rate (IDLE) sampling rate (Hz)"
+	range 12 104
+	default 26
+	help
+	  Accelerometer ODR and polling rate in low-rate mode
+	  (wp_imu_source_set_low_rate(true)); the gyroscope is off then.
+
+config WAFER_PAD_IMU_GYRO_SETTLE_MS
+	int "Gyroscope turn-on settle time (ms)"
+	range 0 1000
+	default 80
+	help
+	  Samples are flagged gyro_valid=false for this long after the
+	  gyroscope is powered up again.
+
+config WAFER_PAD_IMU_READ_ERROR_LIMIT
+	int "Consecutive read errors before reporting an IMU error"
+	range 1 100
+	default 5
+
+config WAFER_PAD_IMU_THREAD_STACK_SIZE
+	int "IMU thread stack size"
+	default 2048
+
+config WAFER_PAD_IMU_THREAD_PRIORITY
+	int "IMU thread priority (preemptible)"
+	default 5
+
+config WAFER_PAD_IMU_BIAS_PERSIST
+	bool "Persist the gyroscope bias (settings key wp/imu/bias)"
+	default y
+	depends on SETTINGS
+	help
+	  Load the last gyroscope bias at boot and save it at most once per
+	  WAFER_PAD_IMU_BIAS_SAVE_INTERVAL_S, only when it changed by more
+	  than WAFER_PAD_IMU_BIAS_SAVE_MIN_CHANGE_MILLI_DPS.
+
+config WAFER_PAD_IMU_BIAS_SAVE_INTERVAL_S
+	int "Minimum interval between bias saves (s)"
+	range 1 86400
+	default 60
+	depends on WAFER_PAD_IMU_BIAS_PERSIST
+
+config WAFER_PAD_IMU_BIAS_SAVE_MIN_CHANGE_MILLI_DPS
+	int "Minimum bias change to save (milli-dps)"
+	range 0 10000
+	default 50
+	depends on WAFER_PAD_IMU_BIAS_PERSIST
+
+config WAFER_PAD_IMU_WAKEUP
+	bool "IMU wake-up (activity) interrupt on INT1 as System OFF wake source"
+	default n
+	depends on I2C && GPIO
+	help
+	  wp_imu_source_prepare_wakeup() programs the LSM6DSOX wake-up
+	  interrupt on INT1 with raw register writes and configures the
+	  motion0 node's irq-gpios (D4 / P0.22) as a level wake source.
+	  Requires irq-gpios on the motion0 node; otherwise -ENOTSUP.
+
+config WAFER_PAD_IMU_WAKEUP_THS_MILLI_G
+	int "Wake-up threshold (milli-g)"
+	range 16 1000
+	default 63
+	depends on WAFER_PAD_IMU_WAKEUP
+	help
+	  Slope threshold of the wake-up interrupt, rounded to the
+	  WAKE_UP_THS resolution (full scale / 256, i.e. 15.625 mg at +-4 g).
+
+endif # WAFER_PAD_IMU
+
+# ---- Mounting: IMU axes -> body frame (see include/wafer_pad/types.h) ------
+
+config WAFER_PAD_IMU_MOUNT_X
+	int "Body x axis = sign * IMU axis index"
+	range -3 3
+	default 1
+	help
+	  body[0] = sign(v) * imu[|v| - 1]: 1 = +X_imu, -1 = -X_imu,
+	  2 = +Y_imu, ... The three |values| must be a permutation of 1,2,3
+	  (checked at build time). 0 is invalid.
+
+config WAFER_PAD_IMU_MOUNT_Y
+	int "Body y axis = sign * IMU axis index"
+	range -3 3
+	default 2
+	help
+	  body[1] = sign(v) * imu[|v| - 1]. See WAFER_PAD_IMU_MOUNT_X.
+
+config WAFER_PAD_IMU_MOUNT_Z
+	int "Body z axis = sign * IMU axis index"
+	range -3 3
+	default 3
+	help
+	  body[2] = sign(v) * imu[|v| - 1]. See WAFER_PAD_IMU_MOUNT_X.
+
+# ---- Gyroscope bias estimator (struct wp_gyro_bias_config) -----------------
+
+config WAFER_PAD_IMU_BIAS_STILL_GYRO_CENTI_DPS
+	int "Bias: still if |gyro - bias| below (centi-dps)"
+	range 1 10000
+	default 100
+	help
+	  Keep this well below the slowest deliberate air-mouse rotation
+	  (a few dps): a larger band lets the bias EMA absorb slow aiming
+	  and the cursor stops while the hand keeps turning.
+
+config WAFER_PAD_IMU_BIAS_STILL_ACCEL_DEV_MILLI_G
+	int "Bias: still if dynamic accel below (milli-g)"
+	range 1 1000
+	default 30
+
+config WAFER_PAD_IMU_BIAS_STILL_MIN_MS
+	int "Bias: stillness needed before (re)estimating (ms)"
+	range 50 60000
+	default 800
+
+config WAFER_PAD_IMU_BIAS_ALPHA_MILLI
+	int "Bias: EMA factor per still sample (x1000)"
+	range 0 1000
+	default 20
+
+config WAFER_PAD_IMU_BIAS_MAX_DECI_DPS
+	int "Bias: reject estimates above (deci-dps)"
+	range 1 1000
+	default 100
+
+# ---- Motion features (struct wp_motion_config) ------------------------------
+
+config WAFER_PAD_IMU_MOTION_STILL_GYRO_CENTI_DPS
+	int "Motion: still if |gyro| below (centi-dps)"
+	range 1 10000
+	default 150
+
+config WAFER_PAD_IMU_MOTION_STILL_ACCEL_DEV_MILLI_G
+	int "Motion: still if dynamic accel below (milli-g)"
+	range 1 1000
+	default 15
+
+config WAFER_PAD_IMU_MOTION_STILL_WINDOW_MS
+	int "Motion: continuous stillness needed for 'still' (ms)"
+	range 0 60000
+	default 300
+
+config WAFER_PAD_IMU_MOTION_MOVE_GYRO_DECI_DPS
+	int "Motion: moving if |gyro| above (deci-dps)"
+	range 1 20000
+	default 200
+
+config WAFER_PAD_IMU_MOTION_MOVE_ACCEL_DEV_MILLI_G
+	int "Motion: moving if dynamic accel above (milli-g)"
+	range 1 4000
+	default 60
+
+config WAFER_PAD_IMU_MOTION_TREMOR_TAU_MS
+	int "Motion: tremor / jitter RMS EMA time constant (ms)"
+	range 1 10000
+	default 250
+
+config WAFER_PAD_IMU_MOTION_ACCEL_LP_TAU_MS
+	int "Motion: gravity low-pass time constant (ms)"
+	range 1 10000
+	default 400
+
+config WAFER_PAD_IMU_MOTION_HANDHELD_TREMOR_CENTI_DPS
+	int "Motion: gyro tremor RMS suggesting a hand (centi-dps)"
+	range 1 10000
+	default 35
+
+config WAFER_PAD_IMU_MOTION_HANDHELD_JITTER_MILLI_G
+	int "Motion: accel jitter RMS suggesting a hand, gyro off (milli-g)"
+	range 1 1000
+	default 4
+
+# ---- Plausibility watchdog (src/imu/imu_algo.c, wp_imu_plaus_*) ----------
+
+config WAFER_PAD_IMU_DEAD_MS
+	int "Implausible-reading watchdog time (ms, 0 = off)"
+	range 0 10000
+	default 500
+	help
+	  A silent sensor reset (rail glitch) leaves the LSM6DSOX in
+	  power-down: reads succeed but return zeros. If |accel| stays below
+	  WAFER_PAD_IMU_DEAD_ACCEL_MILLI_G, or the enabled and settled gyro
+	  reads exactly 0,0,0, for longer than this, a warning is logged,
+	  WP_IMU_STATUS_ERROR is posted and the sensor is re-initialized.
+	  500 ms: longer than a fall from table height (0.4 s); only a free
+	  fall from more than 1.2 m lasts longer, and a re-init then is
+	  harmless.
+
+config WAFER_PAD_IMU_DEAD_ACCEL_MILLI_G
+	int "Implausibly low |accel| for the watchdog (0.001 g)"
+	range 1 1000
+	default 200
+	help
+	  200 = 0.2 g. At rest or in the hand |accel| is about 1 g; below
+	  0.2 g only in free fall.
+
+endmenu
