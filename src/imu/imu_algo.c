@@ -388,6 +388,13 @@ void wp_motion_update(struct wp_motion *m, const struct wp_imu_sample *s,
 		return;
 	}
 
+	if (s->restart) {
+		/* The sensor was reconfigured (e.g. 104 -> 26 Hz on IDLE entry):
+		 * comparing against the old low-pass would report a step as
+		 * motion and wake the pad. Start over from this sample. */
+		wp_motion_reset(m);
+	}
+
 	if (m->init) {
 		int64_t dt_us = s->t_us - m->last_t_us;
 

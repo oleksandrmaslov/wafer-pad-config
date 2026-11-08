@@ -154,6 +154,9 @@ struct wp_imu_sample {
 	float accel[3];    /**< Specific force, m/s^2, body frame. */
 	float gyro[3];     /**< Angular rate, rad/s, body frame, bias-corrected. */
 	bool gyro_valid;   /**< false while the gyroscope is powered down. */
+	bool restart;      /**< First sample after a sensor reconfiguration (data
+			    *   rate change, re-init): filters that compare against
+			    *   earlier samples restart from this one. */
 };
 
 /** Mapping IMU axes -> body axes. body[i] = sign(map[i]) * imu[|map[i]| - 1].

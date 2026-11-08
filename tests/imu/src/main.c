@@ -469,6 +469,51 @@ ZTEST(imu_motion, test_moving_on_accel_spike)
 	zassert_equal(s.f.tremor_dps, 0.0f);
 }
 
+/*
+ * IDLE entry switches the accelerometer 104 -> 26 Hz. A step in the output
+ * at the switch must not count as motion when the sample is flagged
+ * restart; the same step without the flag does (the hardware bug: the pad
+ * woke itself ~40 ms after entering IDLE).
+ */
+ZTEST(imu_motion, test_restart_after_rate_change)
+{
+	static struct motion_sim s;
+	const float g0[3] = {0};
+	const float shifted[3] = {0.08f, 0.0f, 0.99f};
+	struct wp_imu_sample smp = {.gyro_valid = false};
+
+	motion_sim_init(&s);
+	motion_quiet(&s, ODR_HZ);
+	zassert_true(s.f.still);
+
+	/* Same step, flagged: no motion, filters restart from it. */
+	smp.t_us = s.t;
+	for (int k = 0; k < 3; k++) {
+		smp.accel[k] = shifted[k] * G;
+	}
+	smp.restart = true;
+	wp_motion_update(&s.m, &smp, &s.f);
+	zassert_true(s.f.valid);
+	zassert_false(s.f.moving);
+	zassert_false(s.f.still); /* stillness has to be earned again */
+	zassert_within(s.f.accel_dev_g, 0.0f, 1e-6f);
+
+	/* Steady at the new level, 26 Hz: still after the window, never moving. */
+	smp.restart = false;
+	for (int j = 0; j < 12; j++) {
+		smp.t_us += 38462;
+		wp_motion_update(&s.m, &smp, &s.f);
+		zassert_false(s.f.moving, "sample %d", j);
+	}
+	zassert_true(s.f.still);
+
+	/* The same step without the flag is (correctly) motion. */
+	motion_sim_init(&s);
+	motion_quiet(&s, ODR_HZ);
+	motion_step(&s, g0, shifted, false);
+	zassert_true(s.f.moving);
+}
+
 ZTEST(imu_motion, test_hand_tremor_gyro)
 {
 	static struct motion_sim s;
