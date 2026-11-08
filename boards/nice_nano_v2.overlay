@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) 2026 Wafer Pad contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Wafer Pad wiring on the nice!nano v2 (see docs/wiring.md):
+ *
+ *   Signal          nice!nano      Device
+ *   SDA             D2 / P0.17     TPS65 J1-6, LSM6DSOX SDA
+ *   SCL             D3 / P0.20     TPS65 J1-5, LSM6DSOX SCL
+ *   RDY             D8 / P1.04     TPS65 J1-1
+ *   NRST            D9 / P1.06     TPS65 J1-2
+ *   INT1 (optional) D4 / P0.22     LSM6DSOX INT1
+ *   3V3             VCC pin        TPS65 J1-4 (VDDHI), LSM6DSOX VIN/VCC
+ *   GND             GND            TPS65 J1-3, LSM6DSOX GND
+ *
+ * Both devices share I2C0 at 400 kHz. External 4.7 kOhm pull-ups from SDA
+ * and SCL to 3V3 are REQUIRED unless the IMU breakout already provides
+ * pull-ups (nice!nano v2 has none; TPS65 pull-ups are undocumented). The
+ * internal nRF pull-ups enabled below (~13 kOhm) are only a fallback.
+ */
+
+#include <zephyr/dt-bindings/sensor/lsm6dso.h>
+
+/ {
+	aliases {
+		motion0 = &imu;
+	};
+};
+
+&i2c0_default {
+	group1 {
+		bias-pull-up;
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	/* ST LSM6DSOX on the Zephyr "st,lsm6dso" driver: WHO_AM_I (0x6C) and the
+	 * accel/gyro control/output registers are identical (hal_st
+	 * lsm6dso_reg.h vs lsm6dsox_reg.h). 0x6A = SA0 low (Adafruit default),
+	 * use 0x6B if the breakout pulls SA0 high — check with `i2c scan`.
+	 */
+	imu: lsm6dsox@6a {
+		compatible = "st,lsm6dso";
+		reg = <0x6a>;
+		accel-range = <LSM6DSO_DT_FS_4G>;
+		accel-odr = <LSM6DSO_DT_ODR_104Hz>;
+		gyro-range = <LSM6DSO_DT_FS_500DPS>;
+		gyro-odr = <LSM6DSO_DT_ODR_104Hz>;
+		/* Optional INT1 on D4 / P0.22 (needs CONFIG_LSM6DSO_TRIGGER):
+		 * irq-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+		 * int-pin = <1>;
+		 */
+	};
+};
