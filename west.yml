@@ -1,0 +1,41 @@
+# Wafer Pad west manifest.
+#
+# This repository is the manifest repository of its own west workspace
+# ("T2 star topology"). It pins upstream Zephyr to a released tag and pulls in
+# ONLY the modules this application actually needs, to keep `west update`
+# small and the build reproducible.
+#
+# Verified versions (see docs/testing.md for how this was checked):
+#   Zephyr  v4.5.0  (commit 41d10b59730406bbab4ca9f1fbbe9e96aafb4966)
+#   Zephyr SDK 1.0.1 (zephyr/SDK_VERSION at v4.5.0)
+#
+# Workspace setup (fresh):
+#   mkdir wafer-ws && cd wafer-ws
+#   git clone <this repo> wafer-pad
+#   west init -l wafer-pad
+#   west update
+#   west packages pip --install   # Python deps for this Zephyr version
+
+manifest:
+  self:
+    path: wafer-pad
+
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: v4.5.0
+      import:
+        # Only the modules required for nRF52840 + BLE + ST sensor HAL.
+        # Module revisions are taken from zephyr/west.yml at v4.5.0.
+        name-allowlist:
+          - cmsis_6        # Cortex-M CMSIS core headers
+          - hal_nordic     # nrfx drivers used by the nRF52840 SoC support
+          - hal_st         # STMEMSC HAL used by the Zephyr lsm6dso driver
+          - mbedtls        # PSA crypto backend for BLE SMP (pairing / bonding)
+          - tf-psa-crypto  # PSA crypto core used by mbedtls in this Zephyr version
+          - picolibc       # C library module (fallback when not taken from the SDK)
+          - segger         # Optional: SEGGER RTT logging over SWD
