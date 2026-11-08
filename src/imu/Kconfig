@@ -41,6 +41,18 @@ config WAFER_PAD_IMU_GYRO_SETTLE_MS
 	  Samples are flagged gyro_valid=false for this long after the
 	  gyroscope is powered up again.
 
+config WAFER_PAD_IMU_ACCEL_SETTLE_MS
+	int "Accelerometer settle time after a data-rate change (ms)"
+	range 0 1000
+	default 100
+	help
+	  After every accelerometer ODR change (IDLE entry 104 -> 26 Hz,
+	  wake-up 26 -> 104 Hz, re-init) samples are discarded for this long
+	  and the next one is flagged restart, so the motion detector starts
+	  over instead of reading the transition as movement. 100 ms covers
+	  two samples at 26 Hz. Without it the pad woke itself from IDLE
+	  about 40 ms after entering it (seen on the nice!nano prototype).
+
 config WAFER_PAD_IMU_READ_ERROR_LIMIT
 	int "Consecutive read errors before reporting an IMU error"
 	range 1 100

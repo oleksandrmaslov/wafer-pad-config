@@ -97,6 +97,8 @@ static struct {
 	bool gyro_on;              /* applied gyro state */
 	bool low_rate;             /* applied rate state */
 	int64_t gyro_valid_from_us;
+	int64_t accel_valid_from_us; /* samples before this are discarded */
+	bool restart_pending;      /* flag the next posted sample "restart" */
 	uint32_t period_us;
 	struct wp_imu_mount mount;
 	struct wp_gyro_bias bias;
@@ -288,6 +290,11 @@ static int apply_rates(bool force)
 		if (ret == 0) {
 			imu.low_rate = want_low;
 			imu.period_us = 1000000U / hz;
+			/* Output right after an ODR change is a transition, not
+			 * motion: drop it, then restart the motion filters. */
+			imu.accel_valid_from_us =
+				now_us() + (int64_t)CONFIG_WAFER_PAD_IMU_ACCEL_SETTLE_MS * 1000;
+			imu.restart_pending = true;
 			LOG_DBG("accel %u Hz", hz);
 		} else {
 			err = ret;
@@ -472,7 +479,13 @@ static void sample_once(void)
 	}
 	on_read_ok();
 
+	if (t_us < imu.accel_valid_from_us) {
+		return; /* settling after a data-rate change */
+	}
+
 	s.t_us = t_us;
+	s.restart = imu.restart_pending;
+	imu.restart_pending = false;
 	for (int i = 0; i < 3; i++) {
 		v[i] = sensor_value_to_float(&acc[i]);
 	}
