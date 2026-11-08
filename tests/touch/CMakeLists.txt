@@ -1,0 +1,11 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.20.0)
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(touch_test LANGUAGES C)
+
+set(WP ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+target_include_directories(app PRIVATE ${WP}/include)
+target_sources(app PRIVATE src/main.c ${WP}/src/touch/touch_tracker.c
+			   ${WP}/src/touch/touch_iqs5xx.c)
