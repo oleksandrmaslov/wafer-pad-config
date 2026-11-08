@@ -1,0 +1,107 @@
+# Copyright (c) 2026 Wafer Pad contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "HID transport (BLE HID over GATT)"
+
+config WAFER_PAD_BLE_MAX_INFLIGHT
+	int "Maximum HID input notifications in flight"
+	default 2
+	range 1 8
+	help
+	  Number of HID input report notifications that may be queued in the
+	  Bluetooth host/controller at once. When the limit is reached the BLE
+	  transport reports "not ready" until a notification completes, so the
+	  report composer coalesces motion instead of building a backlog.
+	  CONFIG_BT_ATT_TX_COUNT must be at least this + 3 (one ATT response,
+	  Service Changed, BAS) so the router thread never blocks waiting for
+	  an ATT buffer.
+
+config WAFER_PAD_BLE_PAIRING_WINDOW_S
+	int "Pairing window after boot (s)"
+	default 120
+	range 0 3600
+	help
+	  New pairings (Just Works) are accepted only while no bond exists,
+	  for this long after boot, or after 'wp pair' on the shell. Outside
+	  the window only already bonded hosts can connect, so visitors cannot
+	  pair their phones and evict the demo host's bond. The window closes
+	  after the first successful bonding.
+
+config WAFER_PAD_BLE_ADV_INTERVAL_MIN_US
+	int "Advertising interval minimum (us)"
+	default 30000
+	range 20000 10240000
+	help
+	  Connectable advertising interval minimum in microseconds; must be a
+	  multiple of 625 us. Default 30 ms = BT_GAP_ADV_FAST_INT_MIN_1.
+
+config WAFER_PAD_BLE_ADV_INTERVAL_MAX_US
+	int "Advertising interval maximum (us)"
+	default 60000
+	range 20000 10240000
+	help
+	  Connectable advertising interval maximum in microseconds; must be a
+	  multiple of 625 us and >= the minimum. Default 60 ms =
+	  BT_GAP_ADV_FAST_INT_MAX_1.
+
+# Connection parameters requested by wp_ble_set_low_latency(). The central
+# decides; Apple Accessory Design Guidelines 57.6 rejects requests that break:
+#   interval min >= 15 ms and a multiple of 15 ms (HID: down to 11.25 ms on
+#   some devices), interval max >= min + 15 ms or min == max == 15 ms,
+#   peripheral latency <= 30, interval max * (latency + 1) <= 6 s,
+#   6 s <= supervision timeout <= 18 s,
+#   timeout > interval max * (latency + 1) * 3.
+# The defaults satisfy all of these (and the Bluetooth Core limits).
+
+config WAFER_PAD_BLE_LL_INTERVAL_MIN_US
+	int "Low-latency connection interval minimum (us)"
+	default 15000
+	range 7500 4000000
+	help
+	  Requested while the pad is in active use. Multiple of 1250 us.
+	  15 ms (min == max) is the shortest Apple-compliant request; hosts
+	  without Apple's rules accept 7500 here.
+
+config WAFER_PAD_BLE_LL_INTERVAL_MAX_US
+	int "Low-latency connection interval maximum (us)"
+	default 15000
+	range 7500 4000000
+	help
+	  Multiple of 1250 us, >= the minimum.
+
+config WAFER_PAD_BLE_LL_LATENCY
+	int "Low-latency peripheral latency (connection events)"
+	default 0
+	range 0 30
+
+config WAFER_PAD_BLE_PS_INTERVAL_MIN_US
+	int "Power-saving connection interval minimum (us)"
+	default 30000
+	range 7500 4000000
+	help
+	  Requested while the pad is idle. Multiple of 1250 us.
+
+config WAFER_PAD_BLE_PS_INTERVAL_MAX_US
+	int "Power-saving connection interval maximum (us)"
+	default 60000
+	range 7500 4000000
+	help
+	  Multiple of 1250 us, >= the minimum.
+
+config WAFER_PAD_BLE_PS_LATENCY
+	int "Power-saving peripheral latency (connection events)"
+	default 4
+	range 0 30
+	help
+	  The peripheral may skip this many connection events when it has
+	  nothing to send. Input reports are still sent at the next event.
+
+config WAFER_PAD_BLE_SUPERVISION_TIMEOUT_MS
+	int "Connection supervision timeout (ms)"
+	default 6000
+	range 100 32000
+	help
+	  Used by both parameter sets. Multiple of 10 ms. 6 s is the lowest
+	  value Apple's general guideline (57.6) accepts.
+
+endmenu
